@@ -205,6 +205,7 @@ void drawAnswers(TensorVisualizer tv) {
   for (int i = 0; i < tv.boxes.length; i++) {
     if (tv.boxes[i].isVisible) {
       textSize(15);
+      fill(255);
       text(i, tv.boxes[i].curPos.x, tv.boxes[i].curPos.y + 30, tv.boxes[i].curPos.z);
     }
   }

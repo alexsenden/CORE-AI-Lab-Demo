@@ -8,6 +8,8 @@ import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
 import oscP5.*;
 import peasy.*;
+
+// Visualizer.pde variables
 PeasyCam cam;
 
 Tensor tensor;
@@ -44,12 +46,38 @@ PGraphics canvas;
 PVector convBoxSize = new PVector(12, 12, 12);
 PVector mlpBoxSize = new PVector(4, 12, 12);
 
-OscP5 oscP5;
 PJOGL pgl;
 GL4 gl;
 BoxGL boxGL;
 Shader instanceShader;
 Shader outlineShader;
+
+// Drawing.pde variables
+PGraphics pg;
+
+int prevMouseX = -1;
+int prevMouseY = -1;
+
+Button sendButton;
+
+int canvasX = 700;
+int canvasY = 650;
+int canvasW = 500;
+int canvasH = 500;
+
+int canvasLeft = canvasX - canvasW/2;
+int canvasRight = canvasX + canvasW/2;
+int canvasTop = canvasY - canvasH/2;
+int canvasBottom = canvasY + canvasH/2;
+
+PFont font;
+
+boolean visualizing = false;
+
+int SECONDS_UNTIL_RESET = 75;
+int FRAMERATE = 60;
+int DURATION_IN_FRAMES = SECONDS_UNTIL_RESET * FRAMERATE;
+int currentFrame = 0;
 
 
 void settings() {
@@ -58,9 +86,12 @@ void settings() {
 }
 
 void setup() {
-  println("Begin Setup");
-  frameRate(120);
-  noCursor();
+  setupVisualizer();
+  setupInputPage();
+}
+
+void setupVisualizer() {
+  frameRate(FRAMERATE);
   cam = new PeasyCam(this, 400);
 
   pgl = (PJOGL)beginPGL();
@@ -73,10 +104,6 @@ void setup() {
   OscProperties op = new OscProperties();
   op.setListeningPort(12000);
   op.setDatagramSize(10000);
-  
-  println("OSC Prop Set");
-  oscP5 = new OscP5(this, op);
-  println("OSC Initialized");
 
   //noSmooth();
   canvas = createGraphics(32, 32);
@@ -146,11 +173,42 @@ void setup() {
   cv1.setNextAnimation(cv2);
   cv1.setState(loadCameraState("camstate_1.ser"));
   //cv1.start();
-  
-  println("Setup Complete");
+}
+
+void setupInputPage() {
+  //font = createFont("NotoSansKR-Bold.ttf", 32); // 맑은 고딕 사용 예시
+  //textFont(font);
+
+  pg = createGraphics(32, 32);
+  pg.beginDraw();
+  pg.background(0);
+  pg.endDraw();
+
+  int buttonWidth = 300;
+  int buttonHeight = 100;
+  int buttonLeft = height + (width-height)/2 - buttonWidth/2;
+  int buttonTop = height/2 - buttonHeight/2;
+
+  sendButton = new Button(buttonLeft, buttonTop, buttonWidth, buttonHeight, "Predict", new Runnable() {
+    public void run() {
+      println("Button Clicked!");
+      startVisualization();
+    }
+  }
+  );
 }
 
 void draw() {
+  if (visualizing) {
+    drawVisualization();
+  } else {
+    cam.beginHUD();
+    drawInputPage();
+    cam.endHUD();
+  }
+}
+
+void drawVisualization() {
   Tensor conv1Result = conv1.forward(inputTensor);
   Tensor conv2Result = conv2.forward(conv1Result);
   Tensor conv3Result = conv3.forward(conv2Result);
@@ -240,6 +298,50 @@ void draw() {
   mv1.update();
   mv2.update();
 
+  currentFrame++;
+  if (currentFrame >= DURATION_IN_FRAMES) {
+    visualizing = false;
+    currentFrame = 0;
+  }
+  println(currentFrame);
+}
+
+void drawInputPage() {
+  pg.beginDraw();
+  if (mousePressed) {
+    if (prevMouseX == -1) {
+      prevMouseX = mouseX;
+      prevMouseY = mouseY;
+    }
+    pg.stroke(255);
+    pg.strokeWeight(2.4);
+    pg.line(
+      32*map(mouseX, canvasLeft, canvasRight, 0, 1),
+      32*map(mouseY, canvasTop, canvasBottom, 0, 1),
+      32*map(prevMouseX, canvasLeft, canvasRight, 0, 1),
+      32*map(prevMouseY, canvasTop, canvasBottom, 0, 1)
+      );
+    prevMouseX = mouseX;
+    prevMouseY = mouseY;
+  }
+  pg.endDraw();
+
+  background(0);
+
+
+  image(pg, canvasLeft, canvasTop, canvasW, canvasH);
+  stroke(255);
+  int strokeWeightValue = 6;
+  strokeWeight(strokeWeightValue);
+  noFill();
+  rect(canvasLeft, canvasTop, canvasW, canvasH);
+
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(25);
+  text("Draw a number between 0 and 9 below. \n The network will classify the number you wrote.", canvasX, canvasY - canvasH/2 - 150);
+
+  sendButton.display();
 }
 
 void keyPressed() {
@@ -307,8 +409,22 @@ void reset() {
   cv1.start();
 }
 
+void startVisualization() {
+  visualizing = true;
+  OscMessage myMessage = new OscMessage("/test");
+
+  pg.loadPixels();
+  myMessage.add(pg.pixels); /* add an int array to the osc message */
+
+  pg.beginDraw();
+  pg.background(0);
+  pg.endDraw();
+
+  runVisualization(myMessage);
+}
+
 /* incoming osc message are forwarded to the oscEvent method. */
-void oscEvent(OscMessage theOscMessage) {
+void runVisualization(OscMessage theOscMessage) {
   /* print the address pattern and the typetag of the received OscMessage */
   print("### received an osc message.");
   print(" addrpattern: "+theOscMessage.addrPattern());
@@ -316,4 +432,15 @@ void oscEvent(OscMessage theOscMessage) {
     inputTensor.set(float(theOscMessage.get(i).intValue() >> 16 & 0xFF) / 255.0, 0, 0, i/32, i%32);
   }
   reset();
+}
+
+void mousePressed() {
+  if (!visualizing)
+    sendButton.checkClick();
+}
+
+void mouseReleased() {
+  sendButton.resetClick();
+  prevMouseX = -1;
+  prevMouseY = -1;
 }
