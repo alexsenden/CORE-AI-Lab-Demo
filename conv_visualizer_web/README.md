@@ -1,49 +1,81 @@
-# CNN Visualizer - Web Version
+# CNN Visualizer - Web
 
-This is a port of the Processing-based CNN visualizer to p5.js for web browser compatibility.
+A browser-based WebGL implementation of the CNN visualization, combining:
+- Input screen from `conv_visualizer_webgl`
+- 3D rendering pipeline and camera controls from `webgl_test`
+- Visualization logic ported from `conv_visualizer_web` (p5.js)
 
-## Setup
+## Features
 
-1. Copy all data files from `../conv_visualizer/visualizer/data/` to `./data/`:
-   - `randomTensor.txt`
-   - `conv1Weight.txt`, `conv1Bias.txt`
-   - `conv2Weight.txt`, `conv2Bias.txt`
-   - `conv3Weight.txt`, `conv3Bias.txt`
-   - `conv4Weight.txt`, `conv4Bias.txt`
-   - `mlp1Weight.txt`, `mlp1Bias.txt`
-   - `mlp2Weight.txt`, `mlp2Bias.txt`
-
-2. Open `index.html` in a web browser. For best results, use a local web server:
-   ```bash
-   # Python 3
-   python -m http.server 8000
-   
-   # Python 2
-   python -m SimpleHTTPServer 8000
-   
-   # Node.js (with http-server installed)
-   npx http-server
-   ```
-   Then navigate to `http://localhost:8000`
+- **Drawing Interface**: Draw numbers 0-9 on a 32x32 canvas
+- **3D Visualization**: Real-time WebGL visualization of CNN layers
+- **Orbital Camera**: Mouse drag to rotate, scroll to zoom
+- **Layer Animation**: Animated visualization of convolutional and MLP layers
 
 ## Usage
 
-1. Draw a number (0-9) on the canvas
-2. Click the "Predict" button to start the visualization
-3. The visualization will show how the neural network processes your drawing
-4. Use mouse to rotate the camera (drag) and zoom (scroll wheel)
-5. Press 'c' to reset the visualization
+1. Serve the files using a local web server (required for loading data files):
+   ```bash
+   # Using Python 3
+   python -m http.server 8000
+   
+   # Using Node.js (http-server)
+   npx http-server
+   ```
+2. Draw a number (0-9) on the canvas
+3. Click "Predict" to start the visualization
+4. Use mouse to rotate camera, scroll wheel to zoom
+5. Press 'C' to restart the animation
 
-## Differences from Processing Version
+## Architecture
 
-- Simplified rendering (no OpenGL instancing shaders - uses standard p5.js box rendering)
-- Camera controls implemented with basic orbit controller
-- File loading uses p5.js preload() function
-- Drawing canvas integrated directly (no OSC communication needed)
-- Camera state files (`.ser`) are not loaded (can be added as JSON if needed)
+### Core Classes
+- `Tensor.js`: Tensor data structure and operations
+- `Conv2D.js`: Convolutional layer implementation
+- `MLP.js`: Multi-layer perceptron implementation
+- `Box.js`: 3D box representation for tensor visualization
 
-## Browser Requirements
+### Visualization Classes
+- `TensorVisualizer.js`: Visualizes tensor data as 3D boxes
+- `Conv2DVisualizer.js`: Animates convolutional layer operations
+- `MLPVisualizer.js`: Animates MLP layer operations
+- `ReshapeVisualizer.js`: Animates tensor reshaping
+- `Animation.js`: Base class for animations
 
-- Modern web browser with WebGL support
-- JavaScript enabled
-- For best performance, use Chrome, Firefox, or Edge
+### Rendering
+- `WebGLRenderer.js`: WebGL renderer for drawing boxes
+- `webgl-utils.js`: Matrix operations and WebGL utilities
+- `camera.js`: Orbital camera controller
+
+### Main
+- `main.js`: Main application logic, event handling, and animation loop
+
+## File Structure
+
+```
+conv_visualizer_webgl_2/
+├── index.html          # Main HTML file
+├── js/
+│   ├── main.js         # Main application
+│   ├── webgl-utils.js  # WebGL utilities
+│   ├── camera.js       # Camera controller
+│   ├── WebGLRenderer.js # WebGL renderer
+│   ├── Tensor.js       # Tensor class
+│   ├── Conv2D.js       # Conv2D layer
+│   ├── MLP.js          # MLP layer
+│   ├── Box.js          # Box class
+│   ├── Animation.js    # Animation base
+│   ├── TensorVisualizer.js
+│   ├── Conv2DVisualizer.js
+│   ├── MLPVisualizer.js
+│   ├── ReshapeVisualizer.js
+│   └── utils.js        # Utility functions
+└── data/               # Neural network weights and data
+```
+
+## Differences from Original
+
+- Uses standard WebGL (not WebGL2) for broader compatibility
+- Orbital camera instead of first-person camera
+- Vec3 class instead of p5.Vector
+- Simplified rendering without instancing (for compatibility)

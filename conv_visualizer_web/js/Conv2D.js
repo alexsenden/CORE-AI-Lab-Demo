@@ -9,12 +9,12 @@ class Conv2D {
     forward(x) {
         const xShape = x.getShape();
         const bSize = xShape.get(0);
-        const imgSize = xShape.get(2) / 2;
+        const imgSize = Math.floor(xShape.get(2) / 2);
         const outShape = [bSize, this.wShape[0], imgSize, imgSize];
         const kernelH = this.wShape[2];
         const kernelW = this.wShape[3];
-        const kernelHSize = kernelH / 2;
-        const kernelWSize = kernelW / 2;
+        const kernelHSize = Math.floor(kernelH / 2);
+        const kernelWSize = Math.floor(kernelW / 2);
         const result = new Tensor(outShape[0], outShape[1], outShape[2], outShape[3]);
 
         // loop over every output channel
@@ -28,15 +28,19 @@ class Conv2D {
                             for (let n = 0; n < kernelW; n++) {
                                 const offsetX = m - kernelHSize;
                                 const offsetY = n - kernelWSize;
-                                const currentVal = result.get(0, i, j, k);
-                                const inputVal = x.get(0, l, j * this.stride + offsetX, k * this.stride + offsetY);
-                                const weightVal = this.weights.get(i, l, m, n);
-                                result.set(currentVal + inputVal * weightVal, 0, i, j, k);
+                                result.set(
+                                    result.get(0, i, j, k) +
+                                    x.get(0, l, j * this.stride + offsetX, k * this.stride + offsetY) *
+                                    this.weights.get(i, l, m, n),
+                                    0,
+                                    i,
+                                    j,
+                                    k
+                                );
                             }
                         }
                     }
-                    const currentVal = result.get(0, i, j, k);
-                    result.set(currentVal + this.bias.get(i), 0, i, j, k);
+                    result.set(result.get(0, i, j, k) + this.bias.get(i), 0, i, j, k);
                     result._relu();
                 }
             }

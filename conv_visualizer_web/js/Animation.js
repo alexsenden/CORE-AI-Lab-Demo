@@ -12,9 +12,7 @@ class Animation {
     start() {
         this.resetAnimation();
         this.startAnimation();
-        if (this.state && cam) {
-            cam.setState(this.state, 400);
-        }
+        // Camera state handling can be added here if needed
     }
 
     reset() {
@@ -29,7 +27,7 @@ class Animation {
         // To be implemented by subclasses
     }
 
-    update() {
+    update(currentTime) {
         // To be implemented by subclasses
     }
 

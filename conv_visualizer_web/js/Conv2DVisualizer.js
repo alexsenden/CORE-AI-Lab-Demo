@@ -1,11 +1,12 @@
 class Conv2DVisualizer extends Animation {
-    constructor(conv2D, srcVis, trgVis, iterations) {
+    constructor(conv2D, srcVis, trgVis, iterations, boxSize) {
         super();
         this.conv2D = conv2D;
         this.weights = conv2D.weights;
         this.srcVis = srcVis;
         this.trgVis = trgVis;
         this.iterations = iterations;
+        this.boxSize = boxSize;
 
         this.weightsVisualizerList = [];
         this.srcIdxX = 0;
@@ -30,7 +31,7 @@ class Conv2DVisualizer extends Animation {
         this.weightsVisualizerList = [];
     }
 
-    update() {
+    update(currentTime) {
         if (!this.isComplete) {
             for (let iter = 0; iter < this.iterations; iter++) {
                 if (this.doCreateFilters) {
@@ -50,9 +51,9 @@ class Conv2DVisualizer extends Animation {
                     );
                     const centerPos = this.srcVis.boxes[idx_flat_src].getTrgPos().copy();
                     centerPos.z = this.srcVis.centerPos.z;
-                    const tv = new TensorVisualizer(weightSlice, centerPos, this.srcVis.spacing, convBoxSize);
+                    const tv = new TensorVisualizer(weightSlice, centerPos, this.srcVis.spacing, this.boxSize);
                     tv.setAnimationDuration(40);
-                    tv.setCurPosOffset(createVector(0, 0, 30));
+                    tv.setCurPosOffset(new Vec3(0, 0, 30));
                     tv.setIdxFlat(idx_flat_src, idx_flat_trg);
                     tv.setVisible(true);
                     this.weightsVisualizerList.push(tv);
@@ -95,8 +96,8 @@ class Conv2DVisualizer extends Animation {
 
                 for (let i = this.weightsVisualizerList.length - 1; i >= 0; i--) {
                     const tvTemp = this.weightsVisualizerList[i];
-                    tvTemp.update();
-                    if (tvTemp.isAnimationComplete()) {
+                    tvTemp.update(currentTime);
+                    if (tvTemp.isAnimationComplete(currentTime)) {
                         if (tvTemp.getAnimationStage() < 1) {
                             tvTemp.setAnimationDuration(40);
                             tvTemp.setTrgPos(this.trgVis.boxes[tvTemp.idxFlatTrg]);
@@ -111,9 +112,11 @@ class Conv2DVisualizer extends Animation {
         }
     }
 
-    draw() {
+    getVisibleBoxes() {
+        const boxes = [];
         for (let tv of this.weightsVisualizerList) {
-            tv.draw();
+            boxes.push(...tv.getVisibleBoxes());
         }
+        return boxes;
     }
 }

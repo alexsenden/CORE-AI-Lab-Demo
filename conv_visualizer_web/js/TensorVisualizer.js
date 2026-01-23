@@ -26,25 +26,25 @@ class TensorVisualizer {
 
     createBoxes(indices, dim, boxSize) {
         if (dim === this.tensor.getShape().getNumDimensions()) {
-            const pos = createVector(0, 0, 0);
+            const pos = new Vec3(0, 0, 0);
             const boxIndex = getIndex(this.tensor.shape, ...indices);
 
             if (this.tensor.getShape().getNumDimensions() === 3) {
-                const halfX = this.tensor.getShape().get(1) / 2;
-                const halfY = this.tensor.getShape().get(2) / 2;
-                const halfZ = this.tensor.getShape().get(0) / 2;
+                const halfX = Math.floor(this.tensor.getShape().get(1) / 2);
+                const halfY = Math.floor(this.tensor.getShape().get(2) / 2);
+                const halfZ = Math.floor(this.tensor.getShape().get(0) / 2);
                 const x = map(indices[1], 0, this.tensor.getShape().get(1) - 1, -halfX * this.spacing, halfX * this.spacing);
                 const y = map(indices[2], 0, this.tensor.getShape().get(2) - 1, -halfY * this.spacing, halfY * this.spacing);
                 const z = map(indices[0], 0, this.tensor.getShape().get(0) - 1, -halfZ * this.spacing, halfZ * this.spacing);
                 pos.set(y, x, z);
             } else if (this.tensor.getShape().getNumDimensions() === 2) {
-                const halfX = (this.tensor.getShape().get(0) - 1) / 2;
-                const halfY = (this.tensor.getShape().get(1) - 1) / 2;
+                const halfX = Math.floor((this.tensor.getShape().get(0) - 1) / 2);
+                const halfY = Math.floor((this.tensor.getShape().get(1) - 1) / 2);
                 const x = map(indices[0], 0, this.tensor.getShape().get(0) - 1, -halfX * this.spacing, halfX * this.spacing);
                 const y = map(indices[1], 0, this.tensor.getShape().get(1) - 1, -halfY * this.spacing, halfY * this.spacing);
                 pos.set(y, x, 0);
             } else {
-                const halfX = (this.tensor.getShape().get(0) - 1) / 2;
+                const halfX = Math.floor((this.tensor.getShape().get(0) - 1) / 2);
                 const x = map(indices[0], 0, this.tensor.getShape().get(0) - 1, -halfX * this.spacing, halfX * this.spacing);
                 pos.set(x, 0, 0);
             }
@@ -78,13 +78,35 @@ class TensorVisualizer {
         this.tensor.data = squeezed.data;
     }
 
-    setTrgPos(tv) {
-        if (tv.tensor.data.length !== this.tensor.data.length) {
-            throw new Error("Shape of the new tensor must match the shape of the visualizer tensor");
-        }
-        for (let i = 0; i < this.boxes.length; i++) {
-            this.boxes[i].frameStart = frameCount;
-            this.boxes[i].setTrgPos(tv.boxes[i].getTrgPos());
+    setTrgPos(arg) {
+        const currentTime = performance.now();
+        // Check if argument is a TensorVisualizer (has tensor and boxes properties)
+        if (arg && arg.tensor && arg.boxes) {
+            // Handle TensorVisualizer
+            if (arg.tensor.data.length !== this.tensor.data.length) {
+                throw new Error("Shape of the new tensor must match the shape of the visualizer tensor");
+            }
+            for (let i = 0; i < this.boxes.length; i++) {
+                this.boxes[i].timeStart = currentTime;
+                // Initialize curVal to current tensor value to prevent color flicker during animation
+                const currentVal = this.boxes[i].getVal();
+                this.boxes[i].setCurVal(currentVal);
+                this.boxes[i].setTrgPos(arg.boxes[i].getTrgPos());
+            }
+        } else if (arg && typeof arg.getTrgPos === 'function') {
+            // Handle Box
+            for (let i = 0; i < this.boxes.length; i++) {
+                this.boxes[i].timeStart = currentTime;
+                // Initialize curVal to current tensor value to prevent color flicker during animation
+                const currentVal = this.boxes[i].getVal();
+                this.boxes[i].setCurVal(currentVal);
+                this.boxes[i].setOrgSize(this.boxes[i].getTrgSize());
+                this.boxes[i].setOrgPos(this.boxes[i].getTrgPos());
+                this.boxes[i].setTrgPos(arg.getTrgPos());
+                this.boxes[i].setTrgBox(arg);
+            }
+        } else {
+            throw new Error("setTrgPos expects either a TensorVisualizer or a Box");
         }
     }
 
@@ -106,16 +128,6 @@ class TensorVisualizer {
         }
         for (let i = 0; i < this.boxes.length; i++) {
             this.boxes[i].setCurVal(tv.boxes[i].getVal());
-        }
-    }
-
-    setTrgPos(box) {
-        for (let i = 0; i < this.boxes.length; i++) {
-            this.boxes[i].frameStart = frameCount;
-            this.boxes[i].setOrgSize(this.boxes[i].getTrgSize());
-            this.boxes[i].setOrgPos(this.boxes[i].getTrgPos());
-            this.boxes[i].setTrgPos(box.getTrgPos());
-            this.boxes[i].setTrgBox(box);
         }
     }
 
@@ -151,7 +163,15 @@ class TensorVisualizer {
         this.animationStage = stage;
     }
 
-    isAnimationComplete() {
+    isAnimationComplete(currentTime) {
+        // Check time-based completion first (framerate-independent)
+        // If time has elapsed, animation is complete regardless of position
+        for (let box of this.boxes) {
+            if (!box.isAnimationTimeComplete(currentTime)) {
+                return false;
+            }
+        }
+        // Also check position as a fallback (in case time check fails)
         for (let box of this.boxes) {
             if (!box.isCloseEnough()) {
                 return false;
@@ -160,17 +180,20 @@ class TensorVisualizer {
         return true;
     }
 
-    update() {
+    update(currentTime) {
         for (let box of this.boxes) {
-            box.update();
+            box.update(currentTime);
         }
     }
 
-    draw() {
-        // Draw all boxes (simplified version without instancing for now)
+    getVisibleBoxes() {
+        const visibleBoxes = [];
         for (let box of this.boxes) {
-            box.draw();
+            if (box.isVisible) {
+                visibleBoxes.push(box);
+            }
         }
+        return visibleBoxes;
     }
 
     copy() {
@@ -187,6 +210,6 @@ class TensorVisualizer {
     }
 
     disposeBuffers() {
-        // No-op in simplified version (would clean up VBOs in OpenGL version)
+        // No-op in WebGL version
     }
 }

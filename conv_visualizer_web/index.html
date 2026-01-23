@@ -1,36 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNN Visualizer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background-color: #000;
+            font-family: sans-serif;
         }
+
         canvas {
             display: block;
         }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #ui>* {
+            pointer-events: auto;
+        }
+
+        #canvas-container {
+            position: absolute;
+            border: 6px solid white;
+            background: black;
+        }
+
+        #drawCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #instructions {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, calc(-50% - 250px));
+            color: white;
+            text-align: center;
+            font-size: 24px;
+            pointer-events: none;
+        }
+
+        #button {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, calc(-50% + 250px));
+            width: 300px;
+            height: 80px;
+            background: #c8c8c8;
+            border: none;
+            cursor: pointer;
+            font-size: 36px;
+            font-weight: bold;
+            color: black;
+        }
+
+        #button:hover {
+            background: #969696;
+        }
+
+        #button:active {
+            background: #646464;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
+
 <body>
-    <script src="sketch/Tensor.js"></script>
-    <script src="sketch/Conv2D.js"></script>
-    <script src="sketch/MLP.js"></script>
-    <script src="sketch/utils.js"></script>
-    <script src="sketch/Box.js"></script>
-    <script src="sketch/TensorVisualizer.js"></script>
-    <script src="sketch/Animation.js"></script>
-    <script src="sketch/Conv2DVisualizer.js"></script>
-    <script src="sketch/MLPVisualizer.js"></script>
-    <script src="sketch/ReshapeVisualizer.js"></script>
-    <script src="sketch/Button.js"></script>
-    <script src="sketch/CameraController.js"></script>
-    <script src="sketch/sketch.js"></script>
+    <canvas id="glCanvas"></canvas>
+    <div id="ui">
+        <div id="instructions">
+            <div>Draw a number between 0 and 9</div>
+            <div style="font-size: 20px; margin-top: 10px;">The network will classify your drawing</div>
+        </div>
+        <div id="canvas-container">
+            <canvas id="drawCanvas" width="32" height="32"></canvas>
+        </div>
+        <button id="button">Predict</button>
+    </div>
+
+    <script src="js/webgl-utils.js"></script>
+    <script src="js/camera.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/Tensor.js"></script>
+    <script src="js/Conv2D.js"></script>
+    <script src="js/MLP.js"></script>
+    <script src="js/Box.js"></script>
+    <script src="js/Animation.js"></script>
+    <script src="js/TensorVisualizer.js"></script>
+    <script src="js/Conv2DVisualizer.js"></script>
+    <script src="js/MLPVisualizer.js"></script>
+    <script src="js/ReshapeVisualizer.js"></script>
+    <script src="js/WebGLRenderer.js"></script>
+    <script src="js/main.js"></script>
 </body>
+
 </html>

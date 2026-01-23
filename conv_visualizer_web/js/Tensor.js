@@ -39,7 +39,13 @@ class Tensor {
     constructor(...shape) {
         this.shape = new Shape(...shape);
         const totalSize = shape.reduce((a, b) => a * b, 1);
-        this.data = new Array(totalSize).fill(0);
+        // Defensive check: ensure totalSize is valid
+        if (isNaN(totalSize) || totalSize <= 0 || !isFinite(totalSize)) {
+            console.error('Invalid tensor shape:', shape, 'totalSize:', totalSize);
+            this.data = new Array(1).fill(0);
+        } else {
+            this.data = new Array(totalSize).fill(0);
+        }
     }
 
     clone() {
@@ -72,13 +78,20 @@ class Tensor {
         if (index === -1) {
             return 0;
         }
-        return this.data[index];
+        const value = this.data[index];
+        // Defensive check: ensure we never return undefined or NaN
+        if (value === undefined || isNaN(value)) {
+            return 0;
+        }
+        return value;
     }
 
     set(value, ...indices) {
         const index = getIndex(this.shape, ...indices);
         if (index !== -1) {
-            this.data[index] = value;
+            // Defensive check: ensure value is a valid number
+            const safeValue = (typeof value === 'number' && !isNaN(value) && isFinite(value)) ? value : 0;
+            this.data[index] = safeValue;
         }
     }
 
