@@ -1,8 +1,8 @@
 // WebGL Renderer for boxes
 class WebGLRenderer {
     // Toggle for white edges (lines between faces)
-    static ENABLE_EDGES = false;
-    static PLASMA_COLOR_MAP = true;
+    static ENABLE_EDGES = true;
+    static PLASMA_COLOR_MAP = false;
 
     // Plasma colormap: maps value [0,1] to RGB [0,1]
     static plasmaColorMap(value) {

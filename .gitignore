@@ -1,2 +1,5 @@
 **/windows-amd64/**
 local/
+.venv/
+node_modules/
+.wrangler/
